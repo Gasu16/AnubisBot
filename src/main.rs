@@ -26,7 +26,7 @@ enum Commands {
     #[command(description = "Check the logs.")]
     Logs,
     #[command(description = "Does the bot reply?")]
-    On,
+    Ping,
     #[command(description = "My github page.")]
     Info,
     #[command(description = "Do the math.")]
@@ -239,8 +239,8 @@ async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
             print_(&cx, "@rootinit check the logs").await?;
         }
 
-        Commands::On                             => {
-            print_(&cx, "I am online...").await?;
+        Commands::Ping                           => {
+            print_(&cx, "pong").await?;
         }
 
         Commands::Calc{x, y, operator}           => {
@@ -322,7 +322,7 @@ async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
         }
 
         Commands::Info                           => {
-            print_(&cx, "https://github.com/Gasu16/HacktoberBot").await?;    
+            print_(&cx, "https://github.com/Gasu16/AnubisBot").await?;    
         }
 
         Commands::Unban                          => {
