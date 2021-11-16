@@ -18,6 +18,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "anubisbot"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "log",
+ "pretty_env_logger",
+ "teloxide",
+ "tokio",
+]
+
+[[package]]
 name = "async-trait"
 version = "0.1.51"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -398,17 +409,6 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tracing",
-]
-
-[[package]]
-name = "hacktoberbot"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "log",
- "pretty_env_logger",
- "teloxide",
- "tokio",
 ]
 
 [[package]]

@@ -7,6 +7,9 @@ use std::str;
 use std::str::FromStr;
 use std::process::Command;
 use chrono::{DateTime, Duration, NaiveDateTime, Utc};
+//use teloxide::payloads::SendPhoto;
+//use teloxide::types::InputFile;
+//use std::borrow::Cow;
 
 #[derive(BotCommand)]
 #[command(rename = "lowercase", description = "Lista comandi", parse_with = "split")]
@@ -31,6 +34,8 @@ enum Commands {
     Info,
     #[command(description = "Do the math.")]
     Calc {x: u32, y: u32, operator: String},
+//    #[command(description = "Send photo.")]
+//    News
 }
 
 enum UnitOfTime {
@@ -103,10 +108,10 @@ async fn mute_user(cx: &Cx, time: Duration) -> Result<(), Box<dyn Error + Send +
                                     ) + time,
                                 )
                                 .await?;
-                            cx.answer(format!("{} has been muted until {}", msg1.from().unwrap().first_name, DateTime::<Utc>::from_utc(
+                            cx.reply_to(format!("{} has been muted until {}", msg1.from().unwrap().first_name, DateTime::<Utc>::from_utc(
                                         NaiveDateTime::from_timestamp(cx.update.date as i64, 0),
                                         Utc,
-                                    ) + time)).await?;
+                                    ) + time)).send().await?;
                         }
                     }
                 }
@@ -158,7 +163,7 @@ async fn kick_user(cx: &Cx, str_msg: &str) -> Result<(), Box<dyn Error + Send + 
                                 .unban_chat_member(cx.update.chat_id(), mes.from().unwrap().id)
                                 .send()
                                 .await?;
-                            cx.answer(format!("{} {}", mes.from().unwrap().first_name, str_msg)).await?;
+                            cx.reply_to(format!("{} {}", mes.from().unwrap().first_name, str_msg)).send().await?;
                         }
                     }
                 }
@@ -211,7 +216,8 @@ async fn ban_user(cx: &Cx) -> Result<(), Box<dyn Error + Send + Sync>> {
                                     cx.update.chat_id(),
                                     message.from().expect("Must be MessageKind::Common").id,
                                 ).await?;
-                            cx.answer(format!("{} has been banned", message.from().unwrap().first_name)).await?;
+                            cx.reply_to(format!("{} has been banned", message.from().unwrap().first_name)).send().await?;
+                            //cx.answer(format!("{} has been banned", message.from().unwrap().first_name)).await?;
                         }
                     }
                 } 
@@ -242,7 +248,14 @@ async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
         Commands::Ping                           => {
             print_(&cx, "pong").await?;
         }
-
+/*
+        Commands::News                           => {
+            let a: u8 = 0; 
+            let s = "egypt".to_string();
+            cx.answer_photo(InputFile::Memory{file_name: "/home/matt/Immagini/AncientEgyptBOTPICS/2020082405030838.jpg".to_string(), data: Cow::from(&s)}).send().await?;
+           print_(&cx, "Image sent").await?;
+        }
+*/
         Commands::Calc{x, y, operator}           => {
             match operator.as_str() {
                 "+" | "add"                      => {
@@ -310,7 +323,7 @@ async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
                         }
                         
                         None => {
-                            print_(&cx, "OOps, an error occured, try again").await?;
+                            print_(&cx, "Ops, an error has occured, try again").await?;
                         }
                     };
                 }
@@ -334,7 +347,7 @@ async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
         }
         
         Commands::Kick                           => {           
-            kick_user(&cx, "has been banned").await?;
+            kick_user(&cx, "has been kicked").await?;
         }
 
         
@@ -363,7 +376,7 @@ async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
                     let mut cmd = Command::new("sh");
                     let j = ["echo", macro_str.as_str()].join(" ");
                     cmd.arg("-c").arg(j);
-                    let _cmd = cmd.output().expect("Comando non letto correttamente");
+                    let _cmd = cmd.output().expect("Command error");
                     print_with(&cx, "", _cmd.stdout).await?;
 
                 }
@@ -385,21 +398,21 @@ async fn main() {
 }
 
 async fn print_(cx: &Cx, to_print: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
-    if let Err(e) = cx.answer(format!("{}", to_print)).await {
+    if let Err(e) = cx.reply_to(format!("{}", to_print)).send().await {
         println!("Error: {}", e.to_string());
     }
     Ok(())
 }
 
 async fn print_with(cx: &Cx, to_print_with: &str, to_arg_with: Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
-    if let Err(er) = cx.answer(format!("{} {:?}", to_print_with, to_arg_with)).await {
+    if let Err(er) = cx.reply_to(format!("{} {:?}", to_print_with, to_arg_with)).send().await {
         println!("Error: {}", er.to_string());
     }
     Ok(())
 }
 
 async fn print_op(cx: &Cx, to_print_op: &str, to_arg_op: u32) -> Result<(), Box<dyn Error + Send + Sync>> {
-    if let Err(op_err) = cx.answer(format!("{} {:?}", to_print_op, to_arg_op)).await {
+    if let Err(op_err) = cx.reply_to(format!("{} {:?}", to_print_op, to_arg_op)).send().await {
         println!("Error: {}", op_err.to_string());
     }
     Ok(())
