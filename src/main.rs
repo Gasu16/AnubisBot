@@ -44,6 +44,8 @@ enum Commands {
     Pix {pixquery: String},
     #[command(description = "Ancient Egypt Archeology")]
     Arch,
+    #[command(description = "Search on Wikipedia")]
+    Wiki {res: String},
     #[command(description = "Which blogs should I read")]
     Blog,
 }
@@ -290,6 +292,11 @@ async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
 
         Commands::Arch                           => {
             cx.reply_to(format!("http://www.ancientegyptarchaeologyfund.com/blog/")).send().await?;
+        }
+
+        Commands::Wiki{res}                      => {
+            let req = res.replace(" ", "_");
+            cx.reply_to(format!("https://en.wikipedia.org/wiki/{}", req)).send().await?;
         }
 
         Commands::Blog                           => {
