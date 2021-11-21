@@ -23,7 +23,9 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "log",
+ "mime",
  "pretty_env_logger",
+ "reqwest",
  "teloxide",
  "tokio",
 ]

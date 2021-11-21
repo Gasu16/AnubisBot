@@ -1,5 +1,5 @@
 //#![allow(unused_imports)]
-// Last edit: 23:28- 16/11/2021
+// Last edit: 13:26 - 21/11/2021 
 use teloxide::{prelude::*, types::{ChatPermissions, Me}, utils::command::BotCommand};
 use std::env;
 use std::error::Error;
@@ -12,16 +12,16 @@ use chrono::{DateTime, Duration, NaiveDateTime, Utc};
 //use std::borrow::Cow;
 
 #[derive(BotCommand)]
-#[command(rename = "lowercase", description = "Lista comandi", parse_with = "split")]
+#[command(rename = "lowercase", description = "Lista comandi")]
 enum Commands {
     #[command(description = "Show command list.")]
     Help,
     #[command(description = "Handle a macro.", parse_with = "split")]
     Macro {option: String, macro_str: String},
     #[command(description = "Ban a user.")]
-    Ban, 
+    Ban {reason: String}, 
     #[command(description = "Kick a user.")]
-    Kick,
+    Kick {reason_k: String},
     #[command(description = "Mute a user.", parse_with = "split")]    
     Mute {time: u64, unit: UnitOfTime},
     #[command(description = "Cancel the ban.")]
@@ -32,10 +32,20 @@ enum Commands {
     Ping,
     #[command(description = "My github page.")]
     Info,
-    #[command(description = "Do the math.")]
+    #[command(description = "Do the math.", parse_with = "split")]
     Calc {x: u32, y: u32, operator: String},
-//    #[command(description = "Send photo.")]
-//    News
+    #[command(description = "Search on Google")]
+    Google {query: String},
+    #[command(description = "Check updated news")]
+    News,
+    #[command(description = "Get pics")]
+    Pic {picquery: String},
+    #[command(description = "Search pics in Pixabay")]
+    Pix {pixquery: String},
+    #[command(description = "Ancient Egypt Archeology")]
+    Arch,
+    #[command(description = "Which blogs should I read")]
+    Blog,
 }
 
 enum UnitOfTime {
@@ -69,7 +79,7 @@ fn calc_restrict_time(time: u64, unit: UnitOfTime) -> Duration {
 type Cx = UpdateWithCx<AutoSend<Bot>, Message>;
 
 
-
+// Mute a user for a specific amount of time
 async fn mute_user(cx: &Cx, time: Duration) -> Result<(), Box<dyn Error + Send + Sync>> {
     match cx.update.reply_to_message() {
 
@@ -133,8 +143,8 @@ async fn mute_user(cx: &Cx, time: Duration) -> Result<(), Box<dyn Error + Send +
 }
 
 
-// Kicka un utente
-async fn kick_user(cx: &Cx, str_msg: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
+// Kick a user
+async fn kick_user(cx: &Cx, str_msg: &str, reason_k: String) -> Result<(), Box<dyn Error + Send + Sync>> {
     match cx.update.reply_to_message() {
 
         Some(mes) => {
@@ -159,11 +169,19 @@ async fn kick_user(cx: &Cx, str_msg: &str) -> Result<(), Box<dyn Error + Send + 
                         }
                         
                         false => {
+                            let mut rsn_k = "";
+                            let mut r_k = rsn_k.to_owned();
                             cx.requester
                                 .unban_chat_member(cx.update.chat_id(), mes.from().unwrap().id)
                                 .send()
                                 .await?;
-                            cx.reply_to(format!("{} {}", mes.from().unwrap().first_name, str_msg)).send().await?;
+                            
+                            if reason_k.is_empty() == false {
+                                rsn_k = "Reason: ";
+                                r_k = rsn_k.to_owned() + &reason_k;
+                            }
+
+                            cx.reply_to(format!("{} {}\n{}", mes.from().unwrap().first_name, str_msg, r_k)).send().await?;
                         }
                     }
                 }
@@ -185,8 +203,8 @@ async fn kick_user(cx: &Cx, str_msg: &str) -> Result<(), Box<dyn Error + Send + 
     Ok(())
 }
 
-// Banna un utente 
-async fn ban_user(cx: &Cx) -> Result<(), Box<dyn Error + Send + Sync>> {
+// Ban a user
+async fn ban_user(cx: &Cx, reason: String) -> Result<(), Box<dyn Error + Send + Sync>> {
     match cx.update.reply_to_message() {
         Some(message) => {
             
@@ -199,24 +217,36 @@ async fn ban_user(cx: &Cx) -> Result<(), Box<dyn Error + Send + Sync>> {
                 
                 true => { 
 
+                    // If true, an admin is calling the command
+                    // Check if who is "go up" the command is an admin or a normal user
 
                     let to_ban = cx.requester.get_chat_member(cx.update.chat_id(), message.from().unwrap().id).send().await?;
                     let _to_ban= to_ban.is_privileged();
 
                     match _to_ban {
-            
+                        // If true, the user who is undergo the command is an admin, so is not a
+                        // good idea to ban him
                         true => {
                             cx.reply_to("I cannot use this command on an admin").send().await?;
                         }
-                          
+                        
+                        // It's a normal user, so it is allowed for an admin to invoke this command
+                        // on a user
                         false => {
-               
+                            
+                            let mut rsn = "";
+                            let mut r = rsn.to_owned();
                             cx.requester
                                 .kick_chat_member(
                                     cx.update.chat_id(),
                                     message.from().expect("Must be MessageKind::Common").id,
                                 ).await?;
-                            cx.reply_to(format!("{} has been banned", message.from().unwrap().first_name)).send().await?;
+                            if reason.is_empty() == false {
+                                rsn = "Reason: ";
+                                r = rsn.to_owned() + &reason;
+                            }
+
+                            cx.reply_to(format!("{} has been banned\n{}", message.from().unwrap().first_name, r)).send().await?;
                             //cx.answer(format!("{} has been banned", message.from().unwrap().first_name)).await?;
                         }
                     }
@@ -248,6 +278,34 @@ async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
         Commands::Ping                           => {
             print_(&cx, "pong").await?;
         }
+
+        Commands::Google{query}                  => {
+            let result = query.replace(" ", "+");
+            cx.reply_to(format!("https://www.google.com/search?q={}", result)).send().await?;
+        }
+
+        Commands::News                           => {
+            cx.reply_to(format!("https://www.ancientegyptalive.com/blog/")).send().await?;
+        }
+
+        Commands::Arch                           => {
+            cx.reply_to(format!("http://www.ancientegyptarchaeologyfund.com/blog/")).send().await?;
+        }
+
+        Commands::Blog                           => {
+            cx.reply_to(format!("https://tombraiderhorizons.com/2018/03/06/8-egyptology-blogs-you-should-be-following/")).send().await?;
+        }
+
+        Commands::Pic{picquery}                  => {
+            let result_pic = picquery.replace(" ", "+");
+            cx.reply_to(format!("https://unsplash.com/s/photos/{}", result_pic)).send().await?;
+        }
+
+        Commands::Pix{pixquery}                  => {
+            let result_pix = pixquery.replace(" ", "+");
+            cx.reply_to(format!("https://pixabay.com/images/search/{}", result_pix)).send().await?;
+        }
+
 /*
         Commands::News                           => {
             let a: u8 = 0; 
@@ -339,15 +397,15 @@ async fn action(cx: UpdateWithCx<AutoSend<Bot>, Message>, command: Commands) -> 
         }
 
         Commands::Unban                          => {
-            kick_user(&cx, "has been unbanned").await?;
+            kick_user(&cx, "has been unbanned", "".to_string()).await?;
         }
 
-        Commands::Ban                            => {
-            ban_user(&cx).await?;
+        Commands::Ban{reason}                    => {
+            ban_user(&cx, reason).await?;
         }
         
-        Commands::Kick                           => {           
-            kick_user(&cx, "has been kicked").await?;
+        Commands::Kick{reason_k}                 => {           
+            kick_user(&cx, "has been kicked", reason_k).await?;
         }
 
         
